@@ -1,0 +1,519 @@
+diff --git a/README.md b/README.md
+new file mode 100644
+index 000000000..65bd38bf2
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,38 @@
++# PJSIP with call audio capturing and streaming features
++PJSIP library is modified to capture PCM frames from the call and stream PCM frames to the calls.
++
++## Core classes
++Added two classes to `media.hpp` and `media.cpp` files:
++ - `AudioMediaCapture`: contains list to accumulate incoming frames, frames can be extracted with `getFrames/getFramesAsString` methods.
++ - `AudioMediaStream`: contains list for outgoing frames, frames can be populated with `putFrame/putFrameAsString` methods.
++
++## PJSUA2/SWIG
++Need some changes to SWIG to access those features from the Python:
++- Uncomment `USE_THREADS = -threads -DSWIG_NO_EXPORT_ITERATOR_METHODS` in `swig/python/Makefile`
++- Add typemaps to `swig/pjsua2.i` to send/receive `bytes` from Python:
++```
++#ifdef SWIGPYTHON
++  %typemap(in) (char *data, size_t datasize) {
++    Py_ssize_t len;
++    PyBytes_AsStringAndSize($input, &$1, &len);
++    $2 = (size_t)len;
++  }
++
++  %typemap(in, numinputs=0) (char **data, size_t *datasize)(char *temp, size_t tempsize) {
++    $1 = &temp;
++    $2 = &tempsize;
++  }
++
++  %typemap(argout) (char **data, size_t *datasize) {
++    if(*$1) {
++      $result = PyBytes_FromStringAndSize(*$1, *$2);
++      free(*$1);
++    }
++  }
++#endif
++```
++
++## Run Demo
++ 1. `docker-compose up`
++ 2. `docker-compose exec pjsip python demo.py`
++Demo script dumps frames to from the call to `pjsip/pjsuademo/output.lpcm` and streams `hw.raw` to the call. The recording of the call with both parties will be in `asterisk_files/recordings` directory. 
+diff --git a/pjsip-apps/src/swig/pjsua2.i b/pjsip-apps/src/swig/pjsua2.i
+index a3416a91a..3ce0de2f4 100644
+--- a/pjsip-apps/src/swig/pjsua2.i
++++ b/pjsip-apps/src/swig/pjsua2.i
+@@ -1,5 +1,7 @@
+ %module(directors="1") pjsua2
+ 
++%apply (char *STRING, size_t LENGTH) { (char *data, size_t datasize) }
++
+ //
+ // Suppress few warnings
+ //
+@@ -71,24 +73,6 @@ using namespace pj;
+ #ifdef SWIGJAVA
+ %include "enumtypeunsafe.swg"
+ %javaconst(1);
+-
+-%pragma(java) jniclasscode=%{
+-  static {
+-    try {
+-	System.loadLibrary("openh264");
+-    } catch (UnsatisfiedLinkError e) {
+-	System.err.println("Failed to load native library openh264\n" + e);
+-	System.out.println("This could be safely ignored if you " +
+-			   "don't use OpenH264 video codec.");
+-    }
+-    try {
+-	System.loadLibrary("pjsua2");
+-    } catch (UnsatisfiedLinkError e) {
+-	System.err.println("Failed to load native library pjsua2\n" + e);
+-    }
+-  }
+-%}
+-
+ #endif
+ 
+ %include "symbols.i"
+@@ -104,6 +88,7 @@ using namespace pj;
+ %feature("director") Buddy;
+ %feature("director") FindBuddyMatch;
+ %feature("director") AudioMediaPlayer;
++%feature("director") AudioMediaCapture;
+ 
+ //
+ // STL stuff.
+@@ -190,6 +175,27 @@ using namespace pj;
+ }
+ #endif
+ 
++
++#ifdef SWIGPYTHON
++  %typemap(in) (char *data, size_t datasize) {
++    Py_ssize_t len;
++    PyBytes_AsStringAndSize($input, &$1, &len);
++    $2 = (size_t)len;
++  }
++
++  %typemap(in, numinputs=0) (char **data, size_t *datasize)(char *temp, size_t tempsize) {
++    $1 = &temp;
++    $2 = &tempsize;
++  }
++
++  %typemap(argout) (char **data, size_t *datasize) {
++    if(*$1) {
++      $result = PyBytes_FromStringAndSize(*$1, *$2);
++      free(*$1);
++    }
++  }
++#endif
++
+ %include "pjsua2/media.hpp"
+ %include "pjsua2/presence.hpp"
+ %include "pjsua2/account.hpp"
+diff --git a/pjsip-apps/src/swig/python/Makefile b/pjsip-apps/src/swig/python/Makefile
+index ddc6fcb43..49fe20644 100644
+--- a/pjsip-apps/src/swig/python/Makefile
++++ b/pjsip-apps/src/swig/python/Makefile
+@@ -26,7 +26,7 @@ SWIG_FLAGS=-I../../../../pjlib/include \
+ SRC_DIR=../../../../pjsip/include
+ SRCS=$(SRC_DIR)/pjsua2/endpoint.hpp $(SRC_DIR)/pjsua2/types.hpp
+ 
+-#USE_THREADS = -threads -DSWIG_NO_EXPORT_ITERATOR_METHODS
++USE_THREADS = -threads -DSWIG_NO_EXPORT_ITERATOR_METHODS
+ SWIG_FLAGS += -w312 $(USE_THREADS)
+ 
+ .PHONY: all install uninstall
+@@ -53,4 +53,3 @@ install:
+ uninstall:
+ 	rm -f $(PYTHON_PKG_DIR)/pjsua2*
+ 	rm -f $(PYTHON_PKG_DIR)/_pjsua2*
+-
+diff --git a/pjsip/include/pjsua2/media.hpp b/pjsip/include/pjsua2/media.hpp
+index 3282bf7ef..d8be7129e 100644
+--- a/pjsip/include/pjsua2/media.hpp
++++ b/pjsip/include/pjsua2/media.hpp
+@@ -25,6 +25,8 @@
+  */
+ #include <pjsua-lib/pjsua.h>
+ #include <pjsua2/types.hpp>
++#include <mutex>
++#include <list>
+ 
+ /** PJSUA2 API is inside pj namespace */
+ namespace pj
+@@ -37,7 +39,7 @@ namespace pj
+  */
+ 
+ using std::string;
+-using std::vector;
++// using std::list;
+ 
+ /**
+  * This structure contains all the information needed to completely describe
+@@ -654,6 +656,48 @@ private:
+     int recorderId;
+ };
+ 
++// pj_status_t incomingFrameHandler(pjmedia_port *, void *);
++
++class AudioMediaCapture : public AudioMedia {
++public:
++    AudioMediaCapture();
++    ~AudioMediaCapture();
++    void createMediaCapture();
++    void getFrames(char **data, size_t *datasize);
++    string getFramesAsString();
++    // static pj_status_t processFrames(pjmedia_port *, void *);
++    static void processFrames(pjmedia_port *, void *);
++    virtual void onFrame(char *data, size_t datasize) {}
++    void disableReceivingFrames();
++    void enableReceivingFrames();
++private:
++    bool receive_frames;
++    pj_pool_t *pool;
++    void *frame_buffer;
++    uint frame_size;
++    pjmedia_port *capture_port;
++    std::list<string> frames;
++    std::mutex frames_mtx;
++};
++
++class AudioMediaStream : public AudioMedia {
++public:
++    AudioMediaStream();
++    void createMediaStream();
++    virtual ~AudioMediaStream();
++//    static pj_status_t processFrames(pjmedia_port *, void *);
++    static void processFrames(pjmedia_port *, void *);
++    void putFrame(char *data, size_t datasize);
++    void putFrameAsString(string);
++private:
++    pj_pool_t *pool;
++    pjmedia_port *stream_port;
++    void *frame_buffer;
++    uint frame_size;
++    std::list<string> frames;
++    std::mutex frames_mtx;
++};
++
+ /**
+  * Tone descriptor (abstraction for pjmedia_tone_desc)
+  */
+@@ -2009,8 +2053,6 @@ public:
+ 
+ private:
+     pjmedia_vid_dev_index devId;
+-    pjsua_vid_win_id winId;
+-    void updateDevId();
+ };
+ 
+ /**
+diff --git a/pjsip/src/pjsua2/media.cpp b/pjsip/src/pjsua2/media.cpp
+index 8c958cec1..be921c73f 100644
+--- a/pjsip/src/pjsua2/media.cpp
++++ b/pjsip/src/pjsua2/media.cpp
+@@ -458,6 +458,177 @@ AudioMediaRecorder* AudioMediaRecorder::typecastFromAudioMedia(
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ 
++// pj_status_t incomingFrameHandler(pjmedia_port *port, void *usr_data);
++
++AudioMediaCapture::AudioMediaCapture()
++{
++    pool = pjsua_pool_create("capture_pool", 2000, 2000);
++    frame_buffer = NULL;
++    capture_port = NULL;
++    receive_frames = true;
++}
++
++AudioMediaCapture::~AudioMediaCapture()
++{
++    if(capture_port) {
++        unregisterMediaPort();
++        pjmedia_port_destroy(capture_port);
++        capture_port = NULL;
++        frame_buffer = NULL;
++    }
++    if(pool) {
++        pj_pool_safe_release(&pool);
++    }
++}
++
++void AudioMediaCapture::createMediaCapture()
++{
++    int sample_rate = 8000 * 6;
++    int bits_per_sample = 16;
++    int samples_per_frame = 160 * 6;
++    int channels_count = 1;
++
++    frame_size = bits_per_sample*samples_per_frame*channels_count/8;
++    frame_buffer = pj_pool_zalloc(pool, frame_size);
++
++    pj_status_t status;
++
++    status = pjmedia_mem_capture_create( pool, //Pool
++                          frame_buffer, //Buffer
++                          frame_size, //Buffer Size
++                          sample_rate,
++                          channels_count,
++                          samples_per_frame,
++                          bits_per_sample,
++                          0, //Options
++                          &capture_port); //The return port}
++    if (status != PJ_SUCCESS) {
++        PJSUA2_RAISE_ERROR(status);
++    }
++
++    status = pjmedia_mem_capture_set_eof_cb2(capture_port, this, AudioMediaCapture::processFrames);
++    if (status != PJ_SUCCESS) {
++        PJSUA2_RAISE_ERROR(status);
++    }
++
++    registerMediaPort2(capture_port, pool);
++}
++
++void AudioMediaCapture::processFrames(pjmedia_port *port, void *usr_data) {
++    AudioMediaCapture *capture = static_cast<AudioMediaCapture *>(usr_data);
++//    const std::lock_guard<std::mutex> lock(capture->frames_mtx);
++//    capture->frames.push_back(string((char *)capture->frame_buffer, capture->frame_size));
++
++    if (!capture->receive_frames) {
++        return;
++    }
++
++    capture->onFrame((char *)capture->frame_buffer, capture->frame_size);
++}
++
++string AudioMediaCapture::getFramesAsString()
++{
++    const std::lock_guard<std::mutex> lock(frames_mtx);
++    std::string s="";
++    for (const auto &piece : frames) s += piece;
++    frames.clear();
++    return s;
++}
++
++void AudioMediaCapture::getFrames(char **data, size_t *datasize)
++{
++    std::string s = getFramesAsString();
++    size_t size = s.length();
++    char *c = new char[size];
++    s.copy(c, size, 0);
++    *datasize = size;
++    *data = c;
++}
++
++void AudioMediaCapture::disableReceivingFrames() {receive_frames = false;}
++void AudioMediaCapture::enableReceivingFrames() {receive_frames = true;}
++
++AudioMediaStream::AudioMediaStream() {
++    pool = pjsua_pool_create("stream_pool", 2000, 2000);
++    frame_buffer = NULL;
++    stream_port = NULL;
++}
++
++AudioMediaStream::~AudioMediaStream() {
++    if(stream_port) {
++        unregisterMediaPort();
++        pjmedia_port_destroy(stream_port);
++        stream_port = NULL;
++        frame_buffer = NULL;
++    }
++    if(pool) {
++        pj_pool_safe_release(&pool);
++    }
++}
++
++void AudioMediaStream::putFrameAsString(string data) {
++    const std::lock_guard<std::mutex> lock(frames_mtx);
++    frames.push_front(data);
++}
++
++void AudioMediaStream::putFrame(char *data, size_t datasize) {
++    const std::lock_guard<std::mutex> lock(frames_mtx);
++    frames.push_front(std::string(data, datasize));
++    //frames.push_front(frame);
++}
++
++//pj_status_t AudioMediaStream::processFrames(pjmedia_port *port, void *usr_data) {
++void AudioMediaStream::processFrames(pjmedia_port *port, void *usr_data) {
++    AudioMediaStream *stream = static_cast<AudioMediaStream *>(usr_data);
++    if(stream->frames.size() > 0) {
++        string f = stream->frames.back();
++        uint buf_size = f.length();
++        if(buf_size > stream->frame_size) buf_size = stream->frame_size;
++        f.copy((char*)stream->frame_buffer, buf_size, 0);
++        const std::lock_guard<std::mutex> lock(stream->frames_mtx);
++        stream->frames.pop_back();
++    } else {
++        memset((char*)stream->frame_buffer, 0, stream->frame_size);
++    }
++}
++
++void AudioMediaStream::createMediaStream()
++{
++    int sample_rate = 8000 * 6;
++    int bits_per_sample = 16;
++    int samples_per_frame = 160 * 6;
++    int channels_count = 1;
++
++    frame_size = bits_per_sample*samples_per_frame*channels_count/8;
++    frame_buffer = pj_pool_zalloc(pool, frame_size);
++
++    pj_status_t status;
++
++    status = pjmedia_mem_player_create( pool, //Pool
++                          frame_buffer, //Buffer
++                          frame_size, //Buffer Size
++                          sample_rate,
++                          channels_count,
++                          samples_per_frame,
++                          bits_per_sample,
++                          0, //Options
++                          // PJMEDIA_MEM_NO_LOOP,
++                          &stream_port); //The return port}
++    if (status != PJ_SUCCESS) {
++        PJSUA2_RAISE_ERROR(status);
++    }
++
++    //    pjmedia_mem_player_set_eof_cb(stream_port, this, AudioMediaStream::processFrames);
++    status = pjmedia_mem_player_set_eof_cb2(stream_port, this, AudioMediaStream::processFrames);
++    if (status != PJ_SUCCESS) {
++        PJSUA2_RAISE_ERROR(status);
++    }
++
++    registerMediaPort2(stream_port, pool);
++}
++
++///////////////////////////////////////////////////////////////////////////////
++
+ ToneGenerator::ToneGenerator()
+ : pool(NULL), tonegen(NULL)
+ {
+@@ -713,9 +884,11 @@ AudioMedia &AudDevManager::getPlaybackDevMedia() PJSUA2_THROW(Error)
+ void AudDevManager::setCaptureDev(int capture_dev) const PJSUA2_THROW(Error)
+ {
+     pjsua_snd_dev_param param;
++    pjsua_snd_dev_param_default(&param);
+ 
+     PJSUA2_CHECK_EXPR(pjsua_get_snd_dev2(&param));
+     param.capture_dev = capture_dev;
++    param.playback_dev = getPlaybackDev();
+ 
+     /* Normalize invalid ID or null device to default device */
+     if (param.playback_dev == PJMEDIA_AUD_INVALID_DEV ||
+@@ -724,7 +897,7 @@ void AudDevManager::setCaptureDev(int capture_dev) const PJSUA2_THROW(Error)
+         param.playback_dev = PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV;
+     }
+ 
+-    param.mode |= PJSUA_SND_DEV_NO_IMMEDIATE_OPEN;
++    param.mode = PJSUA_SND_DEV_NO_IMMEDIATE_OPEN;
+ 
+     PJSUA2_CHECK_EXPR( pjsua_set_snd_dev2(&param) );
+ }
+@@ -732,6 +905,7 @@ void AudDevManager::setCaptureDev(int capture_dev) const PJSUA2_THROW(Error)
+ void AudDevManager::setPlaybackDev(int playback_dev) const PJSUA2_THROW(Error)
+ {
+     pjsua_snd_dev_param param;
++    pjsua_snd_dev_param_default(&param);
+ 
+     PJSUA2_CHECK_EXPR(pjsua_get_snd_dev2(&param));
+     param.playback_dev = playback_dev;
+@@ -797,9 +971,15 @@ MediaPort *AudDevManager::setNoDev()
+ 
+ void AudDevManager::setSndDevMode(unsigned mode) const PJSUA2_THROW(Error)
+ {
++    int capture_dev = 0, playback_dev = 0;
+     pjsua_snd_dev_param param;
+-
+-    PJSUA2_CHECK_EXPR(pjsua_get_snd_dev2(&param));
++    pj_status_t status = pjsua_get_snd_dev(&capture_dev, &playback_dev);
++    if (status != PJ_SUCCESS) {
++	PJSUA2_RAISE_ERROR2(status, "AudDevManager::setSndDevMode()");
++    }
++    pjsua_snd_dev_param_default(&param);
++    param.capture_dev = capture_dev;
++    param.playback_dev = playback_dev;
+     param.mode = mode;
+     PJSUA2_CHECK_EXPR( pjsua_set_snd_dev2(&param) );
+ }
+@@ -1338,11 +1518,11 @@ pjsua_vid_preview_param VideoPreviewOpParam::toPj() const
+ }
+ 
+ VideoPreview::VideoPreview(int dev_id)
+-: devId(dev_id), winId(PJSUA_INVALID_ID)
++: devId(dev_id)
+ {
+ #if !PJSUA_HAS_VIDEO
+     /* Suppress warning of unused field when video is disabled */
+-    PJ_UNUSED_ARG(winId);
++    PJ_UNUSED_ARG(devId);
+ #endif
+ }
+ 
+@@ -1360,11 +1540,6 @@ void VideoPreview::start(const VideoPreviewOpParam &param) PJSUA2_THROW(Error)
+ #if PJSUA_HAS_VIDEO
+     pjsua_vid_preview_param prm = param.toPj();
+     PJSUA2_CHECK_EXPR(pjsua_vid_preview_start(devId, &prm));
+-
+-    /* Device may be fast-switched and VideoPreview will not aware of that,
+-     * so better keep win ID too.
+-     */
+-    winId = pjsua_vid_preview_get_win(devId);
+ #else
+     PJ_UNUSED_ARG(param);
+     PJ_UNUSED_ARG(devId);
+@@ -1374,15 +1549,14 @@ void VideoPreview::start(const VideoPreviewOpParam &param) PJSUA2_THROW(Error)
+ void VideoPreview::stop() PJSUA2_THROW(Error)
+ {
+ #if PJSUA_HAS_VIDEO
+-    updateDevId();
+-    PJSUA2_CHECK_EXPR(pjsua_vid_preview_stop(devId));
++    pjsua_vid_preview_stop(devId);
+ #endif
+ }
+ 
+ VideoWindow VideoPreview::getVideoWindow()
+ {
+ #if PJSUA_HAS_VIDEO
+-    return (VideoWindow(winId));
++    return (VideoWindow(pjsua_vid_preview_get_win(devId)));
+ #else
+     return (VideoWindow(PJSUA_INVALID_ID));
+ #endif
+@@ -1391,7 +1565,6 @@ VideoWindow VideoPreview::getVideoWindow()
+ VideoMedia VideoPreview::getVideoMedia() PJSUA2_THROW(Error)
+ {
+ #if PJSUA_HAS_VIDEO
+-    updateDevId();
+     pjsua_conf_port_id id = pjsua_vid_preview_get_vid_conf_port(devId);
+     if (id != PJSUA_INVALID_ID) {
+         VideoMediaHelper vm;
+@@ -1405,22 +1578,6 @@ VideoMedia VideoPreview::getVideoMedia() PJSUA2_THROW(Error)
+ #endif
+ }
+ 
+-/* Device may be fastswitched and VideoPreview will not aware of that,
+- * this function will update the VideoPreview device ID.
+- */
+-void VideoPreview::updateDevId()
+-{
+-#if PJSUA_HAS_VIDEO
+-    if (winId != PJSUA_INVALID_ID) {
+-        PJSUA_LOCK();
+-        pjsua_vid_win *w = &pjsua_var.win[winId];
+-        pj_assert(w->type == PJSUA_WND_TYPE_PREVIEW);
+-        devId = w->preview_cap_id;
+-        PJSUA_UNLOCK();
+-    }
+-#endif
+-}
+-
+ ///////////////////////////////////////////////////////////////////////////////
+ void MediaFormatVideo::fromPj(const pjmedia_format &format)
+ {
