@@ -1,3 +1,164 @@
+diff --git a/.gitignore b/.gitignore
+index a3589c66f..05230fa1a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,78 +1,78 @@
+-pjlib/include/pj/config_site.h
+-lib/
+-bin/
+-output/
+-
+-# VS stuff
+-*.ncb
+-*.suo
+-*.cache
+-*.resw
+-.vs/
+-.vscode/
+-**/build/**/*.vcproj.*.user
+-**/build/**/*.vcxproj.*.user
+-**/build/**/*.vcproj.user
+-**/build/**/*.vcxproj.user
+-**/Win32/Debug
+-**/x64/Debug
+-**/x86/Debug
+-UpgradeLog*.htm
+-# VS 2015 stuff
+-*.pdb
+-*.db
+-*.opendb
+-samples.log
+-
+-# GNU stuff
+-config.log
+-config.status
+-build.mak
+-user.mak
+-cc-auto.mak
+-os-auto.mak
+-m_auto.h
+-os_auto.h
+-config_auto.h
+-sip_autoconf.h
+-*.depend
+-
+-# Apple stuff
+-*.DS_Store
+-autom4te.cache
+-xcuserdata
+-pjsip-apps/src/pjsua/ios*/lib*.a
+-pjsip-apps/src/pjsua/ios/ipjsua.xcodeproj/project.xcworkspace/
+-pjsip-apps/src/pjsua/ios/ipjsua.xcworkspace/xcshareddata
+-pjsip-apps/src/pjsua/ios-swift/Libraries/
+-pjsip-apps/src/pjsua2/ios-swift-pjsua2/Libraries/
+-
+-# SWIG Java/Android stuff
+-pjsip-apps/src/swig/java/android/app/src/main/java/org/pjsip/pjsua2/*.java
+-pjsip-apps/src/swig/java/android/app/src/main/java/org/pjsip/PjCamera*.java
+-pjsip-apps/src/swig/java/android/app/src/main/jniLibs/
+-
+-# SWIG CSharp/Xamarin stuff
+-pjsip-apps/src/swig/csharp/pjsua2xamarin/
+-
+-# SWIG Python stuff
+-pjsip-apps/src/swig/python/build/
+-pjsip-apps/src/swig/python/pjsua2.py
+-pjsip-apps/src/swig/python/pjsua2_wrap.*
+-
+-# unit tests files
+-tests/pjsua/*.pyc
+-tests/pjsua/scripts-*/*.pyc
+-tests/pjsua/*.log
+-tests/pjsua/wavs/tmp*.wav
+-tests/pjsua/tools/cmp_wav
+-tests/pjsua/tools/cmp_wav.dSYM
+-tests/pjsua/logs
+-# benchmark output
+-*bench*.htm
+-
+-# Doxygen stuff
+-*/docs/html/
+-*/docs/xml/
+-*/docs/latex/
+-*/docs/*.tag
++pjlib/include/pj/config_site.h
++lib/
++bin/
++output/
++
++# VS stuff
++*.ncb
++*.suo
++*.cache
++*.resw
++.vs/
++.vscode/
++**/build/**/*.vcproj.*.user
++**/build/**/*.vcxproj.*.user
++**/build/**/*.vcproj.user
++**/build/**/*.vcxproj.user
++**/Win32/Debug
++**/x64/Debug
++**/x86/Debug
++UpgradeLog*.htm
++# VS 2015 stuff
++*.pdb
++*.db
++*.opendb
++samples.log
++
++# GNU stuff
++config.log
++config.status
++build.mak
++user.mak
++cc-auto.mak
++os-auto.mak
++m_auto.h
++os_auto.h
++config_auto.h
++sip_autoconf.h
++*.depend
++
++# Apple stuff
++*.DS_Store
++autom4te.cache
++xcuserdata
++pjsip-apps/src/pjsua/ios*/lib*.a
++pjsip-apps/src/pjsua/ios/ipjsua.xcodeproj/project.xcworkspace/
++pjsip-apps/src/pjsua/ios/ipjsua.xcworkspace/xcshareddata
++pjsip-apps/src/pjsua/ios-swift/Libraries/
++pjsip-apps/src/pjsua2/ios-swift-pjsua2/Libraries/
++
++# SWIG Java/Android stuff
++pjsip-apps/src/swig/java/android/app/src/main/java/org/pjsip/pjsua2/*.java
++pjsip-apps/src/swig/java/android/app/src/main/java/org/pjsip/PjCamera*.java
++pjsip-apps/src/swig/java/android/app/src/main/jniLibs/
++
++# SWIG CSharp/Xamarin stuff
++pjsip-apps/src/swig/csharp/pjsua2xamarin/
++
++# SWIG Python stuff
++pjsip-apps/src/swig/python/build/
++pjsip-apps/src/swig/python/pjsua2.py
++pjsip-apps/src/swig/python/pjsua2_wrap.*
++
++# unit tests files
++tests/pjsua/*.pyc
++tests/pjsua/scripts-*/*.pyc
++tests/pjsua/*.log
++tests/pjsua/wavs/tmp*.wav
++tests/pjsua/tools/cmp_wav
++tests/pjsua/tools/cmp_wav.dSYM
++tests/pjsua/logs
++# benchmark output
++*bench*.htm
++
++# Doxygen stuff
++*/docs/html/
++*/docs/xml/
++*/docs/latex/
++*/docs/*.tag
 diff --git a/README.md b/README.md
 new file mode 100644
 index 000000000..65bd38bf2
@@ -54,6 +215,27 @@ index a3416a91a..3ce0de2f4 100644
  //
  // Suppress few warnings
  //
+@@ -28,9 +30,9 @@ using namespace pj;
+ 
+ #ifdef SWIGCSHARP
+   %typemap(throws, canthrow=1) pj::Error {
+-    SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, 
++    SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException,
+     	(std::string("C++ pj::Error:\n") + $1.info(true).c_str()).c_str());
+-    
++
+     return $null;
+   }
+ #endif
+@@ -53,7 +55,7 @@ using namespace pj;
+   public String getMessage() {
+     return getTitle();
+   }
+-  
++
+   // Disable serialization (check ticket #1868)
+   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+     throw new java.io.NotSerializableException("Check ticket #1868!");
 @@ -71,24 +73,6 @@ using namespace pj;
  #ifdef SWIGJAVA
  %include "enumtypeunsafe.swg"
@@ -79,7 +261,14 @@ index a3416a91a..3ce0de2f4 100644
  #endif
  
  %include "symbols.i"
-@@ -104,6 +88,7 @@ using namespace pj;
+@@ -98,12 +82,13 @@ using namespace pj;
+ // Classes that can be extended in the target language
+ //
+ %feature("director") LogWriter;
+-%feature("director") Endpoint; 
++%feature("director") Endpoint;
+ %feature("director") Account;
+ %feature("director") Call;
  %feature("director") Buddy;
  %feature("director") FindBuddyMatch;
  %feature("director") AudioMediaPlayer;
@@ -87,6 +276,15 @@ index a3416a91a..3ce0de2f4 100644
  
  //
  // STL stuff.
+@@ -159,7 +144,7 @@ using namespace pj;
+ %template(CodecInfoVector2)		std::vector<pj::CodecInfo>;
+ %template(VideoDevInfoVector)		std::vector<pj::VideoDevInfo*>;
+ %template(VideoDevInfoVector2)		std::vector<pj::VideoDevInfo>;
+-%template(CodecFmtpVector)		std::vector<pj::CodecFmtp>;	
++%template(CodecFmtpVector)		std::vector<pj::CodecFmtp>;
+ %template(MediaFormatAudioVector)       std::vector<pj::MediaFormatAudio>;
+ %template(MediaFormatVideoVector)       std::vector<pj::MediaFormatVideo>;
+ %template(CallMediaInfoVector)          std::vector<pj::CallMediaInfo>;
 @@ -190,6 +175,27 @@ using namespace pj;
  }
  #endif
@@ -119,7 +317,21 @@ diff --git a/pjsip-apps/src/swig/python/Makefile b/pjsip-apps/src/swig/python/Ma
 index ddc6fcb43..49fe20644 100644
 --- a/pjsip-apps/src/swig/python/Makefile
 +++ b/pjsip-apps/src/swig/python/Makefile
-@@ -26,7 +26,7 @@ SWIG_FLAGS=-I../../../../pjlib/include \
+@@ -8,7 +8,7 @@ else
+   PYTHON_EXE=python2
+ endif
+ 
+-#PYTHON_SETUP_FLAGS = --inplace 
++#PYTHON_SETUP_FLAGS = --inplace
+ ifeq ($(OS),Windows_NT)
+   PYTHON_PKG_DIR := $(shell $(PYTHON_EXE) -m site --user-site | sed 's/\\/\//g')
+   PYTHON_SETUP_FLAGS += --compiler=mingw32
+@@ -22,11 +22,11 @@ SWIG_FLAGS=-I../../../../pjlib/include \
+ 		   -I../../../../pjlib-util/include \
+ 		   -I../../../../pjmedia/include \
+ 		   -I../../../../pjsip/include \
+-		   -I../../../../pjnath/include -c++ 
++		   -I../../../../pjnath/include -c++
  SRC_DIR=../../../../pjsip/include
  SRCS=$(SRC_DIR)/pjsua2/endpoint.hpp $(SRC_DIR)/pjsua2/types.hpp
  
@@ -155,6 +367,49 @@ index 3282bf7ef..d8be7129e 100644
  
  /**
   * This structure contains all the information needed to completely describe
+@@ -121,7 +123,7 @@ typedef std::vector<MediaFormatVideo> MediaFormatVideoVector;
+ 
+ /**
+  * This structure descibes information about a particular media port that
+- * has been registered into the conference bridge. 
++ * has been registered into the conference bridge.
+  */
+ struct ConfPortInfo
+ {
+@@ -223,7 +225,7 @@ public:
+ 
+ /**
+  * Audio Media. This is a lite wrapper class for audio conference bridge port,
+- * i.e: this class only maintains one data member, conference slot ID, and 
++ * i.e: this class only maintains one data member, conference slot ID, and
+  * the methods are simply proxies for conference bridge operations.
+  *
+  * Application can create a derived class and use registerMediaPort2()/
+@@ -415,7 +417,7 @@ private:
+     pj_pool_t           *mediaPool;
+ };
+ 
+-/** 
++/**
+  * Warning: deprecated, use AudioMediaVector2 instead.
+  *
+  * Array of Audio Media.
+@@ -466,13 +468,13 @@ public:
+ class AudioMediaPlayer : public AudioMedia
+ {
+ public:
+-    /** 
++    /**
+      * Constructor.
+      */
+     AudioMediaPlayer();
+ 
+     /**
+-     * Create a file player,  and automatically add this 
++     * Create a file player,  and automatically add this
+      * player to the conference bridge.
+      *
+      * @param file_name  The filename to be played. Currently only
 @@ -654,6 +656,48 @@ private:
      int recorderId;
  };
@@ -204,6 +459,96 @@ index 3282bf7ef..d8be7129e 100644
  /**
   * Tone descriptor (abstraction for pjmedia_tone_desc)
   */
+@@ -860,7 +904,7 @@ struct AudioDevInfo
+     ~AudioDevInfo();
+ };
+ 
+-/** 
++/**
+  * Warning: deprecated, use AudioDevInfoVector2 instead.
+  *
+  * Array of audio device info.
+@@ -908,7 +952,7 @@ public:
+ 
+     /**
+      * Select or change capture sound device. Application may call this
+-     * function at any time to replace current sound device. Calling this 
++     * function at any time to replace current sound device. Calling this
+      * method will not change the state of the sound device (opened/closed).
+      *
+      * @param capture_dev       Device ID of the capture device.
+@@ -917,7 +961,7 @@ public:
+ 
+     /**
+      * Select or change playback sound device. Application may call this
+-     * function at any time to replace current sound device. Calling this 
++     * function at any time to replace current sound device. Calling this
+      * method will not change the state of the sound device (opened/closed).
+      *
+      * @param playback_dev      Device ID of the playback device.
+@@ -1510,7 +1554,7 @@ private:
+ /**
+  * Extra audio device. This class allows application to have multiple
+  * sound device instances active concurrently.
+- 
++
+  * Application may also use this class to improve media clock. Normally
+  * media clock is driven by sound device in master port, but unfortunately
+  * some sound devices may produce jittery clock. To improve media clock,
+@@ -1590,7 +1634,7 @@ struct MediaSize
+ 
+ /**
+  * This structure descibes information about a particular media port that
+- * has been registered into the conference bridge. 
++ * has been registered into the conference bridge.
+  */
+ struct VidConfPortInfo
+ {
+@@ -1825,7 +1869,7 @@ public:
+      * @return                  Video media of this renderer window.
+      */
+     VideoMedia getVideoMedia() PJSUA2_THROW(Error);
+-    
++
+     /**
+      * Show or hide window. This operation is not valid for native windows
+      * (VideoWindowInfo.isNative=true), on which native windowing API
+@@ -1836,7 +1880,7 @@ public:
+      *
+      */
+     void Show(bool show) PJSUA2_THROW(Error);
+-    
++
+     /**
+      * Set video window position. This operation is not valid for native windows
+      * (VideoWindowInfo.isNative=true), on which native windowing API
+@@ -1846,7 +1890,7 @@ public:
+      *
+      */
+     void setPos(const MediaCoordinate &pos) PJSUA2_THROW(Error);
+-    
++
+     /**
+      * Resize window. This operation is not valid for native windows
+      * (VideoWindowInfo.isNative=true), on which native windowing API
+@@ -1856,7 +1900,7 @@ public:
+      *
+      */
+     void setSize(const MediaSize &size) PJSUA2_THROW(Error);
+-    
++
+     /**
+      * Rotate the video window. This function will change the video orientation
+      * and also possibly the video window size (width and height get swapped).
+@@ -1952,7 +1996,7 @@ public:
+      */
+     VideoPreviewOpParam();
+ 
+-    /** 
++    /**
+      * Convert from pjsip
+      */
+     void fromPj(const pjsua_vid_preview_param &prm);
 @@ -2009,8 +2053,6 @@ public:
  
  private:
@@ -213,10 +558,169 @@ index 3282bf7ef..d8be7129e 100644
  };
  
  /**
+@@ -2039,8 +2081,8 @@ struct VideoDevInfo
+      */
+     pjmedia_dir dir;
+ 
+-    /** 
+-     * Device capabilities, as bitmask combination of #pjmedia_vid_dev_cap 
++    /**
++     * Device capabilities, as bitmask combination of #pjmedia_vid_dev_cap
+      */
+     unsigned caps;
+ 
+@@ -2070,7 +2112,7 @@ public:
+     ~VideoDevInfo();
+ };
+ 
+-/** 
++/**
+  * Warning: deprecated, use VideoDevInfoVector2 instead.
+  *
+  * Array of video device info.
+@@ -2091,7 +2133,7 @@ struct VideoSwitchParam
+      */
+     pjmedia_vid_dev_index target_id;
+ };
+- 
++
+ /**
+  * Video device manager.
+  */
+@@ -2128,7 +2170,7 @@ public:
+     unsigned getDevCount();
+ 
+     /**
+-     * Retrieve the video device info for the specified device index.     
++     * Retrieve the video device info for the specified device index.
+      *
+      * @param dev_id    The video device id
+      * 
+@@ -2177,9 +2219,9 @@ public:
+     string capName(pjmedia_vid_dev_cap cap) const;
+ 
+     /**
+-     * This will configure video format capability to the video device. 
+-     * If video device is currently active, the method will forward the setting 
+-     * to the video device instance to be applied immediately, if it 
++     * This will configure video format capability to the video device.
++     * If video device is currently active, the method will forward the setting
++     * to the video device instance to be applied immediately, if it
+      * supports it.
+      *
+      * This method is only valid if the device has
+@@ -2202,9 +2244,9 @@ public:
+     /**
+      * Get the video format capability to the video device.
+      * If video device is currently active, the method will forward the request
+-     * to the video device. If video device is currently inactive, and if 
+-     * application had previously set the setting and mark the setting as kept, 
+-     * then that setting will be returned. Otherwise, this method will 
++     * to the video device. If video device is currently inactive, and if
++     * application had previously set the setting and mark the setting as kept,
++     * then that setting will be returned. Otherwise, this method will
+      * raise error.
+      *
+      * This method is only valid if the device has
+@@ -2262,10 +2304,10 @@ public:
+      * to the video device instance to be applied immediately, if it
+      * supports it.
+      *
+-     * This method is only valid if the device has 
+-     * PJMEDIA_VID_DEV_CAP_OUTPUT_WINDOW_FLAGS capability in VideoDevInfo.caps 
++     * This method is only valid if the device has
++     * PJMEDIA_VID_DEV_CAP_OUTPUT_WINDOW_FLAGS capability in VideoDevInfo.caps
+      * flags, otherwise Error will be thrown.
+-     * 
++     *
+      * Note that in case the setting is kept for future use, it will be applied
+      * to any devices, even when application has changed the video device to be
+      * used.
+@@ -2287,7 +2329,7 @@ public:
+      * raise error.
+      *
+      * This method is only valid if the device has
+-     * PJMEDIA_VID_DEV_CAP_OUTPUT_WINDOW_FLAGS capability in VideoDevInfo.caps 
++     * PJMEDIA_VID_DEV_CAP_OUTPUT_WINDOW_FLAGS capability in VideoDevInfo.caps
+      * flags, otherwise Error will be thrown.
+      *
+      * @param dev_id    The video device id.
+@@ -2314,7 +2356,7 @@ public:
+     /**
+      * Check whether the video capture device is currently active, i.e. if
+      * a video preview has been started or there is a video call using
+-     * the device.    
++     * the device.
+      *
+      * @param dev_id    The video device id
+      * 
+@@ -2395,7 +2437,7 @@ struct CodecInfo
+     void fromPj(const pjsua_codec_info &codec_info);
+ };
+ 
+-/** 
++/**
+  * Warning: deprecated, use CodecInfoVector2 instead.
+  *
+  * Array of codec info.
+@@ -2503,7 +2545,7 @@ struct CodecOpusConfig
+ 
+ /**
+  * Detailed codec attributes used in configuring a video codec and in querying
+- * the capability of video codec factories. 
++ * the capability of video codec factories.
+  *
+  * Please note that codec parameter also contains SDP specific setting,
+  * #decFmtp and #encFmtp, which may need to be set appropriately based on
+@@ -2603,7 +2645,7 @@ struct MediaEvent
+      * will be specific to the event type being reported.
+      */
+     MediaEventData              data;
+-    
++
+     /**
+      * Pointer to original pjmedia_event. Only valid when the struct
+      * is converted from PJSIP's pjmedia_event.
 diff --git a/pjsip/src/pjsua2/media.cpp b/pjsip/src/pjsua2/media.cpp
 index 8c958cec1..be921c73f 100644
 --- a/pjsip/src/pjsua2/media.cpp
 +++ b/pjsip/src/pjsua2/media.cpp
+@@ -123,7 +123,7 @@ AudioMediaTransmitParam::AudioMediaTransmitParam()
+ {
+ }
+ 
+-AudioMedia::AudioMedia() 
++AudioMedia::AudioMedia()
+ : Media(PJMEDIA_TYPE_AUDIO), id(PJSUA_INVALID_ID), mediaPool(NULL)
+ {
+ 
+@@ -190,7 +190,7 @@ void AudioMedia::unregisterMediaPort()
+     Endpoint::instance().mediaRemove(*this);
+ }
+ 
+-AudioMedia::~AudioMedia() 
++AudioMedia::~AudioMedia()
+ {
+ }
+ 
+@@ -224,7 +224,7 @@ void AudioMedia::startTransmit2(const AudioMedia &sink,
+      PJSUA2_THROW(Error)
+ {
+     pjsua_conf_connect_param pj_param;
+-    
++
+     pjsua_conf_connect_param_default(&pj_param);
+     pj_param.level = param.level;
+     PJSUA2_CHECK_EXPR( pjsua_conf_connect2(id, sink.id, &pj_param) );
+@@ -404,7 +404,7 @@ void AudioMediaPlayer::eof_cb(pjmedia_port *port,
+ {
+     PJ_UNUSED_ARG(port);
+     AudioMediaPlayer *player = (AudioMediaPlayer*)usr_data;
+-    
++
+     player->onEof2();
+ }
+ 
 @@ -458,6 +458,177 @@ AudioMediaRecorder* AudioMediaRecorder::typecastFromAudioMedia(
  
  ///////////////////////////////////////////////////////////////////////////////
@@ -395,18 +899,32 @@ index 8c958cec1..be921c73f 100644
  ToneGenerator::ToneGenerator()
  : pool(NULL), tonegen(NULL)
  {
-@@ -713,9 +884,11 @@ AudioMedia &AudDevManager::getPlaybackDevMedia() PJSUA2_THROW(Error)
+@@ -682,7 +853,7 @@ AudDevManager::~AudDevManager()
+     // At this point, devMedia should have been cleaned up by Endpoint,
+     // as AudDevManager destructor is called after Endpoint destructor.
+     //delete devMedia;
+-    
++
+     clearAudioDevList();
+ }
+ 
+@@ -711,12 +882,14 @@ AudioMedia &AudDevManager::getPlaybackDevMedia() PJSUA2_THROW(Error)
+ }
+ 
  void AudDevManager::setCaptureDev(int capture_dev) const PJSUA2_THROW(Error)
- {
+-{    
++{
      pjsua_snd_dev_param param;
 +    pjsua_snd_dev_param_default(&param);
  
      PJSUA2_CHECK_EXPR(pjsua_get_snd_dev2(&param));
      param.capture_dev = capture_dev;
+-    
 +    param.playback_dev = getPlaybackDev();
- 
++
      /* Normalize invalid ID or null device to default device */
      if (param.playback_dev == PJMEDIA_AUD_INVALID_DEV ||
+         param.playback_dev == PJSUA_SND_NULL_DEV)
 @@ -724,7 +897,7 @@ void AudDevManager::setCaptureDev(int capture_dev) const PJSUA2_THROW(Error)
          param.playback_dev = PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV;
      }
@@ -424,10 +942,21 @@ index 8c958cec1..be921c73f 100644
  
      PJSUA2_CHECK_EXPR(pjsua_get_snd_dev2(&param));
      param.playback_dev = playback_dev;
-@@ -797,9 +971,15 @@ MediaPort *AudDevManager::setNoDev()
+@@ -745,7 +919,7 @@ void AudDevManager::setPlaybackDev(int playback_dev) const PJSUA2_THROW(Error)
+ 
+     param.mode |= PJSUA_SND_DEV_NO_IMMEDIATE_OPEN;
+ 
+-    PJSUA2_CHECK_EXPR( pjsua_set_snd_dev2(&param) );    
++    PJSUA2_CHECK_EXPR( pjsua_set_snd_dev2(&param) );
+ }
+ 
+ #if !DEPRECATED_FOR_TICKET_2232
+@@ -796,10 +970,16 @@ MediaPort *AudDevManager::setNoDev()
+ }
  
  void AudDevManager::setSndDevMode(unsigned mode) const PJSUA2_THROW(Error)
- {
+-{    
++{
 +    int capture_dev = 0, playback_dev = 0;
      pjsua_snd_dev_param param;
 -
@@ -442,11 +971,67 @@ index 8c958cec1..be921c73f 100644
      param.mode = mode;
      PJSUA2_CHECK_EXPR( pjsua_set_snd_dev2(&param) );
  }
-@@ -1338,11 +1518,11 @@ pjsua_vid_preview_param VideoPreviewOpParam::toPj() const
+@@ -1099,7 +1279,7 @@ int AudDevManager::getActiveDev(bool is_capture) const PJSUA2_THROW(Error)
+ ///////////////////////////////////////////////////////////////////////////////
+ ExtraAudioDevice::ExtraAudioDevice (int playdev, int recdev) :
+     playDev(playdev), recDev(recdev), ext_snd_dev(NULL)
+-{ 
++{
  }
  
- VideoPreview::VideoPreview(int dev_id)
+ ExtraAudioDevice::~ExtraAudioDevice()
+@@ -1123,7 +1303,7 @@ void ExtraAudioDevice::open()
+     /* Generate sound device port param */
+     pjmedia_snd_port_param param;
+     pjmedia_snd_port_param_default(&param);
+-    
++
+     status = pjmedia_aud_dev_default_param(recDev, &param.base);
+     PJSUA2_CHECK_RAISE_ERROR(status);
+ 
+@@ -1182,7 +1362,7 @@ VideoWindowInfo VideoWindow::getInfo() const PJSUA2_THROW(Error)
+     pj_bzero(&vwi, sizeof(vwi));
+ #if PJSUA_HAS_VIDEO
+     pjsua_vid_win_info pj_vwi;
+-    
++
+     PJSUA2_CHECK_EXPR( pjsua_vid_win_get_info(winId, &pj_vwi) );
+     vwi.isNative = (pj_vwi.is_native != PJ_FALSE);
+     vwi.winHandle.type = pj_vwi.hwnd.type;
+@@ -1193,7 +1373,7 @@ VideoWindowInfo VideoWindow::getInfo() const PJSUA2_THROW(Error)
+     vwi.pos.y = pj_vwi.pos.y;
+     vwi.size.w = pj_vwi.size.w;
+     vwi.size.h = pj_vwi.size.h;
+-    
++
+ #endif
+     return vwi;
+ }
+@@ -1230,7 +1410,7 @@ void VideoWindow::setPos(const MediaCoordinate &pos) PJSUA2_THROW(Error)
+ {
+ #if PJSUA_HAS_VIDEO
+     pjmedia_coord pj_pos;
+-    
++
+     pj_pos.x = pos.x;
+     pj_pos.y = pos.y;
+     PJSUA2_CHECK_EXPR( pjsua_vid_win_set_pos(winId, &pj_pos) );
+@@ -1265,7 +1445,7 @@ void VideoWindow::setWindow(const VideoWindowHandle &win) PJSUA2_THROW(Error)
+ {
+ #if PJSUA_HAS_VIDEO
+     pjmedia_vid_dev_hwnd vhwnd;
+-   
++
+     vhwnd.type = win.type;
+     vhwnd.info.window = win.handle.window;
+     PJSUA2_CHECK_EXPR( pjsua_vid_win_set_win(winId, &vhwnd) );
+@@ -1337,12 +1517,12 @@ pjsua_vid_preview_param VideoPreviewOpParam::toPj() const
+     return param;
+ }
+ 
+-VideoPreview::VideoPreview(int dev_id) 
 -: devId(dev_id), winId(PJSUA_INVALID_ID)
++VideoPreview::VideoPreview(int dev_id)
 +: devId(dev_id)
  {
  #if !PJSUA_HAS_VIDEO
@@ -517,3 +1102,73 @@ index 8c958cec1..be921c73f 100644
  ///////////////////////////////////////////////////////////////////////////////
  void MediaFormatVideo::fromPj(const pjmedia_format &format)
  {
+@@ -1593,7 +1750,7 @@ int VidDevManager::lookupDev(const string &drv_name,
+ }
+ 
+ string VidDevManager::capName(pjmedia_vid_dev_cap cap) const
+-{    
++{
+     string cap_name;
+ #if PJSUA_HAS_VIDEO
+     cap_name = pjmedia_vid_dev_cap_name(cap, NULL);
+@@ -1718,7 +1875,7 @@ void VidDevManager::switchDev(int dev_id,
+                                                 PJ_FALSE));
+ #else
+     PJ_UNUSED_ARG(dev_id);
+-    PJ_UNUSED_ARG(param);    
++    PJ_UNUSED_ARG(param);
+ #endif
+ }
+ 
+@@ -1738,11 +1895,11 @@ bool VidDevManager::isCaptureActive(int dev_id) const
+     return (pjsua_vid_dev_is_active(dev_id) == PJ_TRUE? true: false);
+ #else
+     PJ_UNUSED_ARG(dev_id);
+-    
++
+     return false;
+ #endif
+ }
+-    
++
+ void VidDevManager::setCaptureOrient(pjmedia_vid_dev_index dev_id,
+                                      pjmedia_orient orient,
+                                      bool keep) PJSUA2_THROW(Error)
+@@ -1770,8 +1927,8 @@ VidDevManager::~VidDevManager()
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ 
+-/** 
+- * Utility class for converting CodecFmtpVector to and from pjmedia_codec_fmtp. 
++/**
++ * Utility class for converting CodecFmtpVector to and from pjmedia_codec_fmtp.
+  */
+ class CodecFmtpUtil
+ {
+@@ -1915,7 +2072,7 @@ void VidCodecParam::fromPj(const pjmedia_vid_codec_param &param)
+ pjmedia_vid_codec_param VidCodecParam::toPj() const
+ {
+     pjmedia_vid_codec_param param;
+-    pj_bzero(&param, sizeof(param));    
++    pj_bzero(&param, sizeof(param));
+     param.dir = dir;
+     param.packing = packing;
+     param.ignore_fmtp = ignoreFmtp;
+@@ -1960,7 +2117,7 @@ void VidConfPortInfo::fromPj(const pjsua_vid_conf_port_info &port_info)
+     }
+ }
+ 
+-VideoMedia::VideoMedia() 
++VideoMedia::VideoMedia()
+ : Media(PJMEDIA_TYPE_VIDEO), id(PJSUA_INVALID_ID)
+ {
+ 
+@@ -2003,7 +2160,7 @@ void VideoMedia::unregisterMediaPort()
+ #endif
+ }
+ 
+-VideoMedia::~VideoMedia() 
++VideoMedia::~VideoMedia()
+ {
+ }
+ 
