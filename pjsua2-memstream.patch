@@ -204,7 +204,7 @@ index 000000000..65bd38bf2
 + 2. `docker-compose exec pjsip python demo.py`
 +Demo script dumps frames to from the call to `pjsip/pjsuademo/output.lpcm` and streams `hw.raw` to the call. The recording of the call with both parties will be in `asterisk_files/recordings` directory. 
 diff --git a/pjsip-apps/src/swig/pjsua2.i b/pjsip-apps/src/swig/pjsua2.i
-index a3416a91a..3ce0de2f4 100644
+index a3416a91a..db35bd87f 100644
 --- a/pjsip-apps/src/swig/pjsua2.i
 +++ b/pjsip-apps/src/swig/pjsua2.i
 @@ -1,5 +1,7 @@
@@ -313,6 +313,29 @@ index a3416a91a..3ce0de2f4 100644
  %include "pjsua2/media.hpp"
  %include "pjsua2/presence.hpp"
  %include "pjsua2/account.hpp"
+@@ -215,6 +221,22 @@ using namespace pj;
+ 	libDestroy_();
+   }
+ %}
++%typemap(throws, throws="java.lang.Exception") pj::Error {
++  jclass excep = jenv->FindClass("java/lang/Exception");
++  if (excep)
++    jenv->ThrowNew(excep, $1.info(true).c_str());
++  return $null;
++}
++
++  // Force the Error Java class to extend java.lang.Exception
++  %typemap(javabase) pj::Error "java.lang.Exception";
++
++  // Override getMessage()
++  %typemap(javacode) pj::Error %{
++  public String getMessage() {
++    return getTitle();
++  }
++%}
+ #endif
+ 
+ %include "pjsua2/endpoint.hpp"
 diff --git a/pjsip-apps/src/swig/python/Makefile b/pjsip-apps/src/swig/python/Makefile
 index ddc6fcb43..49fe20644 100644
 --- a/pjsip-apps/src/swig/python/Makefile
